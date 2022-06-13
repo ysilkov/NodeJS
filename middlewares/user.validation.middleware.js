@@ -23,13 +23,13 @@ const { user } = require('../models/user');
     const compareLists = (a, b) => a.filter(v => !b.includes(v));
 
 const validate = (userData) => {
-  const userData =  {
+      const {
         firstName,
         lastName,
         email,
         phoneNumber,
         password,
-    }; 
+    } = userData;
     const requestFields = Object.keys(userData);
     const modelFields = Object.keys(user);
 
