@@ -1,89 +1,61 @@
 const { user } = require('../models/user');
+const {
+    checkWithModel,
+    checkRequiredKeys,
+    checkAtLeastOneKey,
+} = require('./helper.validation.middleware');
+const { responseMiddleware } = require('./response.middleware');
 
+const valueChecker = {
+    password: password => {
+        if (password.length < 3) {
+            throw new Error(`Insecure password: must be at least 3 symbols`);
+        }
+    },
+    phoneNumber: phoneNumber => {
+        if (!phoneNumber.match(/^[+]380(?=[0-9]{9}$)/)) {
+            throw new Error(`Wrong format: phoneNumber must be '+380XXXXXXXXX`);
+        }
+    },
+    email: email => {
+        if (!email.toLowerCase().match(/^[a-z0-9_.+]+(?=@gmail.com$)/)) {
+            throw new Error(`Wrong format: email must be @gmail.com`);
+        }
+    },
+};
 
-    const isValidName = (username) => {
-        const regex = /^[a-zA-Z\-]+$/;
-        return !!username && regex.test(username);
-    }
-    
-    const isValidEmail = (email) => {
-        const regex = /^[a-z0-9._]+\@gmail\.com$/;
-        return !!email && regex.test(email.toLowerCase());
-    }
-    
-    const isValidPhone = (phone) => {
-        const regex = /^(\+380)\d{9}$/;
-        return !!phone && regex.test(phone);
-    }
-    
-    const isValidPwd = (pwd) => {
-        const regex = /^[0-9a-zA-Z!@#$%^&*]{3,}$/;
-        return !!pwd && regex.test(pwd);
-    }
-    const compareLists = (a, b) => a.filter(v => !b.includes(v));
+const userValid = body => {
+    const prohibitedKeys = ['id'];
+    checkWithModel(body, user, prohibitedKeys);
+    const valueCheckerKeys = Object.keys(valueChecker).filter(key => body[key]);
+    valueCheckerKeys.forEach(key => valueChecker[key](body[key]));
+};
 
-const validate = (userData) => {
-      const {
-        firstName,
-        lastName,
-        email,
-        phoneNumber,
-        password,
-    } = userData;
-    const requestFields = Object.keys(userData);
-    const modelFields = Object.keys(user);
-
-    const fieldDifference = compareLists(requestFields, modelFields);
-    
-    const validations = [
-        !fieldDifference.length,
-        !requestFields.includes('id'),
-        isValidName(firstName),
-        isValidName(lastName),
-        isValidEmail(email),
-        isValidPhone(phoneNumber),
-        isValidPwd(password),
-    ];
-    
-    return validations.every(item => item === true);
-}
-
-// Validatior for user entity during creation
 const createUserValid = (req, res, next) => {
-    if (req.method !== 'POST') {
-        return next();
-    }
-
-    const userData = req.body;
-
-    const isValid = validate(userData);
-    
-    if (!isValid) {
-        const err = new Error('User entity to create isn\'t valid');
-        err.type = 'validation';
+    // TODO: Implement validatior for user entity during creation
+    try {
+        const requiredKeys = ['firstName', 'lastName', 'email', 'phoneNumber', 'password'];
+        checkRequiredKeys(req.body, requiredKeys);
+        userValid(req.body);
+        next();
+    } catch (err) {
         res.err = err;
+        responseMiddleware(req, res, next);
     }
-
-    next();
-}
-
+};
 
 const updateUserValid = (req, res, next) => {
-    if (req.method !== 'PUT') {
-        return next();
-    }
-
-    const userData = req.body;
-
-    const isValid = validate(userData);
-
-    if (!isValid) {
-        const err = new Error('User entity to update isn\'t valid');
-        err.type = 'validation';
+    // TODO: Implement validatior for user entity during update
+    try {
+        const optionalKeys = ['firstName', 'lastName', 'email', 'phoneNumber', 'password'];
+        checkAtLeastOneKey(req.body, optionalKeys);
+        userValid(req.body);
+        next();
+    } catch (err) {
         res.err = err;
+        responseMiddleware(req, res, next);
     }
-    next();
-}
+};
 
 exports.createUserValid = createUserValid;
 exports.updateUserValid = updateUserValid;

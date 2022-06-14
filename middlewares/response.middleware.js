@@ -1,17 +1,18 @@
 const responseMiddleware = (req, res, next) => {
-   if(res.data){
-       res.status(200).json(res.data);
-       return next();
-   }
-   if(res.err){
-       res.status(code).json({
-        error: true,
-        message: res.err.message
-       });
-       return next();
-   }
-
-    next();
-}
+    // TODO: Implement middleware that returns result of the query
+    if (res.err) {
+        if (res.err.message.includes('not found')) {
+            res.status(404);
+        } else {
+            res.status(400);
+        }
+        res.send({ error: true, message: res.err.message });
+    } else if (res.data) {
+        res.status(200).send(res.data);
+    } else {
+        next();
+    }
+};
 
 exports.responseMiddleware = responseMiddleware;
+
